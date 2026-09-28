@@ -28,5 +28,8 @@ MIN_DET_SCORE = 0.5
 # 人脸区域平均亮度（0–255）过暗则拒绝。
 MIN_FACE_BRIGHTNESS = 40.0
 
+# 录入正立判定：两眼连线倾角绝对值超过此度数视为横躺/倾斜，触发试转。
+MAX_EYE_TILT_DEG = 45.0
+
 # 查询图可选落盘目录（识别日志排查用）
 QUERY_DIR = DATA_DIR / "queries"

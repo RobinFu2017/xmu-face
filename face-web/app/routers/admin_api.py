@@ -15,6 +15,7 @@ from app.db import get_db
 from app.face_engine import (
     FaceEngineError,
     bbox_to_json,
+    encode_image_jpeg,
     embedding_to_bytes,
     face_engine,
 )
@@ -173,7 +174,7 @@ async def upload_face(
 
     try:
         image = face_engine.decode_image(raw)
-        feature = face_engine.extract_for_enroll(image)
+        feature, enroll_image = face_engine.extract_for_enroll(image)
     except FaceEngineError as exc:
         raise HTTPException(status_code=400, detail={"code": exc.code, "message": exc.message}) from exc
 
@@ -195,13 +196,11 @@ async def upload_face(
     rel_dir = Path("persons") / str(person.id)
     dest_dir = UPLOAD_DIR / rel_dir
     dest_dir.mkdir(parents=True, exist_ok=True)
-    suffix = Path(file.filename or "face.jpg").suffix.lower() or ".jpg"
-    if suffix not in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}:
-        suffix = ".jpg"
-    filename = f"{uuid.uuid4().hex}{suffix}"
+    # 始终存提特征用的图（可能已自动旋转），编码为 JPEG，避免缩略图与特征朝向不一致
+    filename = f"{uuid.uuid4().hex}.jpg"
     rel_path = (rel_dir / filename).as_posix()
     dest_path = UPLOAD_DIR / rel_path
-    dest_path.write_bytes(raw)
+    dest_path.write_bytes(encode_image_jpeg(enroll_image))
 
     sample = FaceSample(
         person_id=person.id,
