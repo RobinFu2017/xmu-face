@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <h1>识别日志</h1>
+  <div class="row gap">
+    <select id="matchedFilter">
+      <option value="">全部</option>
+      <option value="true">命中</option>
+      <option value="false">未命中</option>
+    </select>
+    <input id="empFilter" type="text" placeholder="工号精确过滤" />
+    <button class="btn secondary" id="btnReload" type="button">刷新</button>
+  </div>
+  <table class="table" id="logsTable">
+    <thead>
+      <tr>
+        <th>时间</th>
+        <th>设备备注</th>
+        <th>结果</th>
+        <th>人员</th>
+        <th>分数</th>
+        <th>第二名</th>
+        <th>错误码</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+<script src="/static/admin.js"></script>
+<script>AdminLogs.init();</script>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <div class="row between">
+    <h1>人员管理</h1>
+    <a class="btn" href="/admin/people/new">新建人员</a>
+  </div>
+  <div class="row gap">
+    <input id="searchQ" type="search" placeholder="搜索工号/姓名" />
+    <select id="statusFilter">
+      <option value="">全部状态</option>
+      <option value="active">启用</option>
+      <option value="disabled">停用</option>
+    </select>
+    <button class="btn secondary" id="btnSearch" type="button">查询</button>
+  </div>
+  <p id="statsLine" class="muted"></p>
+  <table class="table" id="peopleTable">
+    <thead>
+      <tr>
+        <th>工号</th>
+        <th>姓名</th>
+        <th>部门</th>
+        <th>样本</th>
+        <th>状态</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+<script src="/static/admin.js"></script>
+<script>AdminPeople.init();</script>
+{% endblock %}

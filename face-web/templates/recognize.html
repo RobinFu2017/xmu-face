@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="recognize-page">
+  <h1>人脸识别</h1>
+  <p class="muted">安卓平板请用 Chrome，页面需 HTTPS（或 localhost）才能打开摄像头。</p>
+
+  <div class="row gap wrap">
+    <label>设备备注 <input id="deviceLabel" type="text" placeholder="门口平板-1" /></label>
+    <label>抓拍模式
+      <select id="captureMode">
+        <option value="manual">人工触发</option>
+        <option value="auto">自动触发</option>
+      </select>
+    </label>
+    <label>自动间隔(ms)
+      <input id="captureInterval" type="number" min="500" step="100" value="1500" />
+    </label>
+  </div>
+
+  <div class="camera-wrap">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas" class="hidden"></canvas>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="btnStartCam" type="button">打开摄像头</button>
+    <button class="btn" id="btnCapture" type="button">识别</button>
+  </div>
+
+  <div id="result" class="result">等待识别…</div>
+  <pre id="debug" class="debug muted"></pre>
+</section>
+<script src="/static/recognize.js"></script>
+{% endblock %}

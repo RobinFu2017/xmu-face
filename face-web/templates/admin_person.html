@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <div class="row between">
+    <h1>{% if person_id %}人员详情{% else %}新建人员{% endif %}</h1>
+    <a class="btn secondary" href="/admin">返回列表</a>
+  </div>
+
+  <form id="personForm" class="card-form">
+    <label>工号 <input name="employee_no" id="employee_no" required {% if person_id %}readonly{% endif %} /></label>
+    <label>姓名 <input name="name" id="name" required /></label>
+    <label>部门 <input name="department" id="department" /></label>
+    {% if person_id %}
+    <label>状态
+      <select id="status">
+        <option value="active">启用</option>
+        <option value="disabled">停用</option>
+      </select>
+    </label>
+    {% endif %}
+    <button class="btn" type="submit">{% if person_id %}保存{% else %}创建{% endif %}</button>
+  </form>
+
+  {% if person_id %}
+  <hr />
+  <h2>人脸样本</h2>
+  <p class="muted">上传单人正脸图；服务端会做质量校验与查重。每人最多 5 张启用样本。</p>
+  <input type="file" id="faceFile" accept="image/*" />
+  <button class="btn" id="btnUpload" type="button">上传人脸</button>
+  <p id="uploadMsg" class="msg"></p>
+  <div id="samples" class="samples"></div>
+  {% endif %}
+</section>
+<script src="/static/admin.js"></script>
+<script>
+  AdminPerson.init({{ person_id if person_id is not none else 'null' }});
+</script>
+{% endblock %}
