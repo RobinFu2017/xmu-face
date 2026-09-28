@@ -24,6 +24,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 | http://127.0.0.1:8000/admin | 人员管理 |
 | http://127.0.0.1:8000/admin/logs | 识别日志 |
 | http://127.0.0.1:8000/recognize | 平板识别页 |
+| http://127.0.0.1:8000/guide/camera | 摄像头开通指引（安卓可打开） |
 
 首次启动会加载 `buffalo_l`（约 326MB，已下载则直接用 `%USERPROFILE%\.insightface\models\buffalo_l\`）。
 
@@ -35,7 +36,15 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 ### Chrome 临时放开（仅试验）
 
-内网用 `http://192.168.x.x:8000` 这类非安全源时，可用 Chrome 临时把该地址当作安全源：
+内网用 `http://192.168.x.x:8000` 这类非安全源时，可用 Chrome 临时把该地址当作安全源。
+
+**安卓平板可直接打开页面指引**（把 IP 换成你的服务器）：
+
+```text
+http://192.168.1.100:8000/guide/camera
+```
+
+页面会显示当前源地址并支持一键复制，按步骤操作即可。摘要如下：
 
 1. 地址栏打开：`chrome://flags/#unsafely-treat-insecure-origin-as-secure`
 2. 将 **Insecure origins treated as secure** 设为 **Enabled**

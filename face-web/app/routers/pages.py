@@ -44,3 +44,11 @@ def admin_logs(request: Request) -> HTMLResponse:
 @router.get("/recognize", response_class=HTMLResponse)
 def recognize_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "recognize.html", {"title": "人脸识别"})
+
+
+@router.get("/guide/camera", response_class=HTMLResponse)
+def guide_camera(request: Request) -> HTMLResponse:
+    """安卓平板可访问的摄像头开通指引（Chrome insecure-origin flag）。"""
+    return templates.TemplateResponse(
+        request, "guide_camera.html", {"title": "摄像头开通指引"}
+    )

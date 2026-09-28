@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="guide-page">
+  <h1>摄像头开通指引</h1>
+  <p class="guide-lead">
+    局域网用 HTTP（例如 <code>http://192.168.x.x:8000</code>）时，Chrome 默认不允许网页调用摄像头。
+    下面是<strong>仅试验用</strong>的临时方法；正式环境请配置 HTTPS。
+  </p>
+
+  <div class="guide-origin card-form">
+    <p class="guide-label">当前要填入 flags 的源地址</p>
+    <p id="originText" class="guide-origin-value">检测中…</p>
+    <button class="btn" id="btnCopyOrigin" type="button">复制源地址</button>
+    <p id="copyMsg" class="muted"></p>
+  </div>
+
+  <ol class="guide-steps">
+    <li>
+      <strong>在 Chrome 地址栏手动输入</strong>（页面里的链接点不开）：
+      <code class="guide-code">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>
+    </li>
+    <li>
+      找到 <strong>Insecure origins treated as secure</strong>，设为 <strong>Enabled</strong>。
+    </li>
+    <li>
+      在文本框粘贴上面的源地址（可多个，逗号分隔）。
+    </li>
+    <li>
+      点右下角 <strong>Relaunch</strong> 重启浏览器。
+    </li>
+    <li>
+      再打开识别页：
+      <a href="/recognize">/recognize</a>
+    </li>
+  </ol>
+
+  <p class="muted guide-note">
+    升级 Chrome 或清除 flags 后可能失效，不要当作生产方案。
+    请使用系统 Chrome，部分 App 内置 WebView 仍可能无法打开摄像头。
+  </p>
+
+  <div class="actions">
+    <a class="btn" href="/recognize">前往识别页</a>
+    <a class="btn secondary" href="/">回首页</a>
+  </div>
+</section>
+<script>
+(function () {
+  var originEl = document.getElementById("originText");
+  var msgEl = document.getElementById("copyMsg");
+  var origin = location.origin;
+  originEl.textContent = origin;
+
+  document.getElementById("btnCopyOrigin").addEventListener("click", function () {
+    function ok() {
+      msgEl.textContent = "已复制，可粘贴到 Chrome flags 文本框";
+    }
+    function fail() {
+      msgEl.textContent = "复制失败，请长按上方地址手动复制";
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(origin).then(ok).catch(fail);
+    } else {
+      var ta = document.createElement("textarea");
+      ta.value = origin;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        ok();
+      } catch (e) {
+        fail();
+      }
+      document.body.removeChild(ta);
+    }
+  });
+})();
+</script>
+{% endblock %}

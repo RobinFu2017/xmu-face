@@ -31,9 +31,15 @@
 
 ### Chrome 临时放开非安全源（仅试验）
 
-平板用 `http://局域网IP:端口` 访问时，可临时：
+平板用 `http://局域网IP:端口` 访问时，可在平板 Chrome 打开指引页（把 IP/端口换成实际值）：
 
-1. 打开 `chrome://flags/#unsafely-treat-insecure-origin-as-secure`
+```text
+http://192.168.1.100:8000/guide/camera
+```
+
+页面会自动显示当前源并支持复制。步骤摘要：
+
+1. 打开 `chrome://flags/#unsafely-treat-insecure-origin-as-secure`（须在地址栏手动输入）
 2. **Insecure origins treated as secure** → **Enabled**
 3. 填入源地址，例如 `http://192.168.1.100:8000`
 4. **Relaunch** 后重试 `/recognize`
