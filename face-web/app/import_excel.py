@@ -171,18 +171,20 @@ def import_people_from_xlsx(data: bytes, db: Session) -> ImportResult:
     """解析并导入；手机为空跳过；有照片则尝试录脸。"""
     rows = parse_xlsx_rows(data)
     result = ImportResult()
-    print(f"[import] rows={len(rows)}")
+    total = len(rows)
+    print(f"[import] rows={total}")
 
-    for row in rows:
+    for i, row in enumerate(rows, start=1):
+        progress = f"{i}/{total}"
         phone = row.get("phone", "").replace(" ", "")
         name = row.get("name", "").strip()
         if not phone:
             result.skipped.append({"reason": "空手机", "name": name})
-            print(f"[import] skip 空手机 name={name!r}")
+            print(f"[import] {progress} skip 空手机 name={name!r}")
             continue
         if not name:
             result.skipped.append({"reason": "空姓名", "phone": phone})
-            print(f"[import] skip 空姓名 phone={phone}")
+            print(f"[import] {progress} skip 空姓名 phone={phone}")
             continue
 
         person = db.scalar(
@@ -210,7 +212,7 @@ def import_people_from_xlsx(data: bytes, db: Session) -> ImportResult:
             db.flush()
             person.samples = []
             result.created += 1
-            print(f"[import] create {phone} {name}")
+            print(f"[import] {progress} create {phone} {name}")
         else:
             person.name = name
             person.city = row.get("city", "")
@@ -221,7 +223,7 @@ def import_people_from_xlsx(data: bytes, db: Session) -> ImportResult:
             person.signup_status = row.get("signup_status", "")
             person.updated_at = utcnow()
             result.updated += 1
-            print(f"[import] update {phone} {name}")
+            print(f"[import] {progress} update {phone} {name}")
 
         # 录脸：无 URL → missing；有 URL 且（新建 / URL 变化 / 尚无成功脸）则尝试
         need_enroll = False
@@ -230,7 +232,7 @@ def import_people_from_xlsx(data: bytes, db: Session) -> ImportResult:
                 person.photo_url = ""
                 person.face_status = "missing"
                 person.face_message = "无身份识别照片"
-                print(f"[import] face missing {phone}")
+                print(f"[import] {progress} face missing {phone}")
         else:
             url_changed = photo_url != (person.photo_url or "")
             person.photo_url = photo_url
@@ -239,23 +241,23 @@ def import_people_from_xlsx(data: bytes, db: Session) -> ImportResult:
 
         if need_enroll:
             try:
-                print(f"[import] download {phone} {photo_url[:80]}")
+                print(f"[import] {progress} download {phone} {photo_url[:80]}")
                 raw = download_image(photo_url)
                 # 重新加载 samples 关系
                 db.refresh(person, attribute_names=["samples"])
                 enroll_face_bytes(person, raw, db)
                 result.face_ok += 1
-                print(f"[import] face ok {phone}")
+                print(f"[import] {progress} face ok {phone}")
             except FaceEngineError as exc:
                 person.face_status = "failed"
                 person.face_message = exc.message[:500]
                 result.face_failed += 1
-                print(f"[import] face fail {phone}: {exc.message}")
+                print(f"[import] {progress} face fail {phone}: {exc.message}")
             except Exception as exc:  # noqa: BLE001
                 person.face_status = "failed"
                 person.face_message = f"下载或处理失败: {exc}"[:500]
                 result.face_failed += 1
-                print(f"[import] face fail {phone}: {exc}")
+                print(f"[import] {progress} face fail {phone}: {exc}")
 
         db.commit()
 

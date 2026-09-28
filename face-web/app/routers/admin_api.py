@@ -138,15 +138,16 @@ def create_person(body: PersonCreate, db: Session = Depends(get_db)) -> dict:
 
 
 @router.post("/people/import")
-async def import_people(file: UploadFile = File(...), db: Session = Depends(get_db)) -> dict:
+def import_people(file: UploadFile = File(...), db: Session = Depends(get_db)) -> dict:
     """上传互动吧导出的 .xlsx，按手机号 upsert，并尝试下载身份识别照片录脸。
 
+    使用同步 def，由 FastAPI 放入线程池，避免长时间录脸阻塞事件循环导致全站不可访问。
     须声明在 /people/{person_id} 之前，避免 path 参数把 import 当成 id。
     """
     filename = (file.filename or "").lower()
     if not filename.endswith(".xlsx"):
         raise HTTPException(status_code=400, detail="仅支持 .xlsx，请用 Excel 另存为 xlsx 后再导入")
-    raw = await file.read()
+    raw = file.file.read()
     if not raw:
         raise HTTPException(status_code=400, detail="空文件")
     try:

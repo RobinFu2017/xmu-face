@@ -53,10 +53,11 @@ const AdminPeople = {
     const data = await fetch("/api/people?" + params.toString()).then((r) => r.json());
     const tbody = document.querySelector("#peopleTable tbody");
     tbody.innerHTML = "";
-    for (const p of data.items) {
+    data.items.forEach((p, idx) => {
       const tr = document.createElement("tr");
       const faceTitle = p.face_message ? ` title="${escapeAttr(p.face_message)}"` : "";
       tr.innerHTML = `
+        <td>${idx + 1}</td>
         <td><a href="/admin/people/${p.id}">${escapeHtml(p.name)}</a></td>
         <td>${escapeHtml(p.phone)}</td>
         <td>${escapeHtml(p.college || "")}</td>
@@ -74,7 +75,7 @@ const AdminPeople = {
           <button data-id="${p.id}" data-act="del" type="button">删除</button>
         </td>`;
       tbody.appendChild(tr);
-    }
+    });
     tbody.querySelectorAll("button").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-id");
