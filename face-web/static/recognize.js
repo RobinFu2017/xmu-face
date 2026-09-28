@@ -1,8 +1,9 @@
 /**
- * 平板识别页：摄像头预览 + 可配置抓拍模式。
+ * 平板识别页：摄像头预览 + 可配置抓拍模式与前后摄切换。
  *
  * capture_mode=manual|auto
  * capture_interval_ms：自动间隔，默认 1500，最小 500
+ * facing=user|environment：前置 / 后置，默认 environment
  * URL 参数优先，其次 localStorage，最后默认值。
  * 自动模式：上一次 /api/recognize 未返回前不发起下一次，避免打满 CPU。
  */
@@ -13,6 +14,7 @@
   const debugEl = document.getElementById("debug");
   const modeEl = document.getElementById("captureMode");
   const intervalEl = document.getElementById("captureInterval");
+  const facingEl = document.getElementById("facingMode");
   const labelEl = document.getElementById("deviceLabel");
   const btnCapture = document.getElementById("btnCapture");
   const btnStartCam = document.getElementById("btnStartCam");
@@ -20,6 +22,7 @@
   const LS_MODE = "faceweb_capture_mode";
   const LS_INTERVAL = "faceweb_capture_interval_ms";
   const LS_LABEL = "faceweb_device_label";
+  const LS_FACING = "faceweb_facing";
 
   let stream = null;
   let timer = null;
@@ -37,8 +40,15 @@
         1500
     );
     if (!Number.isFinite(interval) || interval < 500) interval = 500;
+    const facingRaw =
+      params.get("facing") ||
+      localStorage.getItem(LS_FACING) ||
+      "environment";
+    const facing = facingRaw === "user" ? "user" : "environment";
+
     modeEl.value = mode === "auto" ? "auto" : "manual";
     intervalEl.value = String(interval);
+    facingEl.value = facing;
     labelEl.value = localStorage.getItem(LS_LABEL) || "";
     persist();
     applyModeUi();
@@ -48,6 +58,7 @@
     localStorage.setItem(LS_MODE, modeEl.value);
     localStorage.setItem(LS_INTERVAL, String(intervalEl.value));
     localStorage.setItem(LS_LABEL, labelEl.value.trim());
+    localStorage.setItem(LS_FACING, facingEl.value);
   }
 
   function applyModeUi() {
@@ -56,20 +67,43 @@
     restartTimer();
   }
 
-  async function startCamera() {
-    if (stream) return;
+  function stopStream() {
+    if (!stream) return;
+    stream.getTracks().forEach((t) => t.stop());
+    stream = null;
+    video.srcObject = null;
+  }
+
+  /**
+   * 打开或按当前朝向重启摄像头。
+   * @param {boolean} forceRestart 已有流时是否强制按新 facing 重开
+   */
+  async function startCamera(forceRestart) {
+    if (stream && !forceRestart) return;
+
+    stopTimer();
+    stopStream();
+
+    const facing = facingEl.value === "user" ? "user" : "environment";
     try {
-      // environment=后置，更适合闸机/签到；失败则回退到默认摄像头
       stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
-          facingMode: { ideal: "environment" },
+          facingMode: { ideal: facing },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
       });
     } catch (e1) {
-      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      try {
+        // 单摄或不支持 facingMode 时回退默认设备
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        if (forceRestart) {
+          alert("无法切换到所选摄像头，已使用默认摄像头");
+        }
+      } catch (e2) {
+        throw e2;
+      }
     }
     video.srcObject = stream;
     await video.play();
@@ -156,10 +190,22 @@
     persist();
     restartTimer();
   });
+  facingEl.addEventListener("change", () => {
+    persist();
+    // 已打开摄像头时立即按新朝向重启
+    if (stream) {
+      startCamera(true).catch((e) => alert(e.message || "切换摄像头失败"));
+    }
+  });
   labelEl.addEventListener("change", persist);
-  btnStartCam.addEventListener("click", () => startCamera().catch((e) => alert(e.message)));
+  btnStartCam.addEventListener("click", () =>
+    startCamera(false).catch((e) => alert(e.message))
+  );
   btnCapture.addEventListener("click", () => captureAndRecognize());
-  window.addEventListener("beforeunload", stopTimer);
+  window.addEventListener("beforeunload", () => {
+    stopTimer();
+    stopStream();
+  });
   document.addEventListener("visibilitychange", () => {
     // 切到后台暂停自动抓拍，回到前台再开
     if (document.hidden) stopTimer();

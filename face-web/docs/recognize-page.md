@@ -2,20 +2,23 @@
 
 路径：`/recognize`
 
-## 抓拍模式
+## 抓拍与摄像头参数
 
 | 参数 | 取值 | 说明 |
 |---|---|---|
 | `capture_mode` | `manual` / `auto` | 人工点按钮，或按间隔自动抓拍 |
 | `capture_interval_ms` | 整数毫秒 | 自动间隔，默认 `1500`，最小 `500` |
+| `facing` | `environment` / `user` | 后置 / 前置，默认 `environment` |
 
 示例：
 
 ```text
-/recognize?capture_mode=auto&capture_interval_ms=2000
+/recognize?capture_mode=auto&capture_interval_ms=2000&facing=user
 ```
 
 优先级：URL 查询参数 → `localStorage` → 默认值。页面上修改后会写入 `localStorage`。
+
+页面「摄像头」下拉可随时切换前后摄；若摄像头已打开，切换后会停掉旧流并按新朝向重新打开。单摄或不支持 `facingMode` 时回退默认摄像头并提示。
 
 ## 行为约束
 
@@ -26,7 +29,7 @@
 ## 摄像头
 
 - 需要 HTTPS 或 localhost；局域网 HTTP 默认无法调用摄像头。
-- 优先请求后置摄像头（`facingMode: environment`），失败则回退默认设备。
+- 默认请求后置（`facingMode: environment`），可在页面或 URL 切到前置（`user`）；失败则回退默认设备。
 - 建议安卓系统 Chrome；部分 App 内置 WebView 可能禁摄像头。
 
 ### Chrome 临时放开非安全源（仅试验）
