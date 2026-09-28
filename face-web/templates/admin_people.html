@@ -3,31 +3,50 @@
 <section>
   <div class="row between">
     <h1>人员管理</h1>
-    <a class="btn" href="/admin/people/new">新建人员</a>
+    <div class="actions">
+      <label class="btn secondary" style="cursor:pointer;margin:0">
+        导入 Excel
+        <input type="file" id="importFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+      </label>
+      <a class="btn" href="/admin/people/new">新建人员</a>
+    </div>
   </div>
   <div class="row gap">
-    <input id="searchQ" type="search" placeholder="搜索工号/姓名" />
+    <input id="searchQ" type="search" placeholder="搜索姓名/手机" />
     <select id="statusFilter">
-      <option value="">全部状态</option>
-      <option value="active">启用</option>
-      <option value="disabled">停用</option>
+      <option value="">识别状态全部</option>
+      <option value="active">启用识别</option>
+      <option value="disabled">停用识别</option>
+    </select>
+    <select id="faceFilter">
+      <option value="">人脸状态全部</option>
+      <option value="ok">人脸正常</option>
+      <option value="missing">无照片</option>
+      <option value="failed">人脸不合格</option>
+      <option value="none">未录入</option>
     </select>
     <button class="btn secondary" id="btnSearch" type="button">查询</button>
   </div>
   <p id="statsLine" class="muted"></p>
-  <table class="table" id="peopleTable">
-    <thead>
-      <tr>
-        <th>工号</th>
-        <th>姓名</th>
-        <th>部门</th>
-        <th>样本</th>
-        <th>状态</th>
-        <th>操作</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <p id="importMsg" class="msg"></p>
+  <div class="table-wrap">
+    <table class="table" id="peopleTable">
+      <thead>
+        <tr>
+          <th>姓名</th>
+          <th>手机</th>
+          <th>学院</th>
+          <th>票种</th>
+          <th>报名状态</th>
+          <th>人脸</th>
+          <th>样本</th>
+          <th>识别</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </section>
 <script src="/static/admin.js"></script>
 <script>AdminPeople.init();</script>

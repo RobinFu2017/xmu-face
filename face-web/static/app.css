@@ -110,6 +110,18 @@ input, select {
 .result.fail { color: var(--danger); }
 .debug { white-space: pre-wrap; font-size: 0.8rem; }
 .actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.card-form.wide { max-width: 560px; }
+.table-wrap { overflow-x: auto; }
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  background: #e2e8f0;
+}
+.badge.ok { background: #d1fae5; color: #065f46; }
+.badge.warn { background: #fef3c7; color: #92400e; }
+.badge.bad { background: #fee2e2; color: #991b1b; }
 
 /* 摄像头开通指引：大字号，方便平板阅读 */
 .guide-page { max-width: 640px; }

@@ -174,7 +174,7 @@
       return;
     }
     if (data.matched && data.person) {
-      resultEl.textContent = `${data.person.name}（${data.person.employee_no}）`;
+      resultEl.textContent = `${data.person.name}（${data.person.phone}）`;
       resultEl.className = "result ok";
       return;
     }

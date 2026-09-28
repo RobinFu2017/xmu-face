@@ -24,11 +24,7 @@ async def recognize(
     save_query: str = Form("0"),
     db: Session = Depends(get_db),
 ) -> dict:
-    """1:N 识别。
-
-    返回 matched / person / score / threshold / second_score / error_code。
-    error_code: 空字符串表示流程正常（可能 below_threshold）；另有 no_face 等。
-    """
+    """1:N 识别。命中时 person 含 id / phone / name。"""
     raw = await image.read()
     label = (device_label or "").strip()[:128]
     query_rel = ""
@@ -68,8 +64,6 @@ async def recognize(
 
     hit, second = gallery_index.search(feature.embedding, threshold=MATCH_THRESHOLD)
     if hit is None:
-        # 未达阈值：把最高分写进 score 便于调参（search 在未命中时 second 可能是 top 或第二名）
-        # 重新取原始 top 分数用于日志：再搜一次阈值极低
         soft_hit, soft_second = gallery_index.search(feature.embedding, threshold=-1.0)
         top_score = soft_hit.score if soft_hit else 0.0
         second_score = soft_second if soft_hit else 0.0
@@ -77,7 +71,7 @@ async def recognize(
             device_label=label,
             matched=False,
             person_id=None,
-            employee_no="",
+            phone="",
             person_name="",
             score=top_score,
             second_score=second_score,
@@ -101,7 +95,7 @@ async def recognize(
         device_label=label,
         matched=True,
         person_id=hit.person_id,
-        employee_no=hit.employee_no,
+        phone=hit.phone,
         person_name=hit.name,
         score=hit.score,
         second_score=second,
@@ -113,7 +107,7 @@ async def recognize(
     db.commit()
     return {
         "matched": True,
-        "person": {"id": hit.person_id, "employee_no": hit.employee_no, "name": hit.name},
+        "person": {"id": hit.person_id, "phone": hit.phone, "name": hit.name},
         "score": hit.score,
         "second_score": second,
         "threshold": MATCH_THRESHOLD,

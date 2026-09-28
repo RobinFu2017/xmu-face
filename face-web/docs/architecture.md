@@ -11,15 +11,15 @@
 
 ## 录入流程
 
-1. 管理页创建 `person`。
-2. 上传图片 → `FaceEngine.extract_for_enroll`：
+1. 管理页创建 `person`（字段含姓名、手机、学院、票种等），或 **导入互动吧导出的 .xlsx**。
+2. 上传/导入图片 → `FaceEngine.extract_for_enroll`：
    - 必须恰好一张脸；
-   - 用五官关键点判断是否正立（两眼倾角、鼻子在眼睛下方）；不正立或检不出脸时自动试转 90°/270° 再检；
+   - 用五官关键点判断是否正立；不正立或检不出脸时自动试转 90°/270° 再检；
    - 检测置信度、脸大小、亮度门槛；
    - 与索引中**其他人**比对，过高则判录重；
    - 落盘保存的是提特征用的图（可能已转正）。
-3. 原图写入 `data/uploads/persons/{id}/`，向量写入 `face_sample.embedding`。
-4. `gallery_index.upsert_sample` 热更新内存矩阵。
+3. Excel 导入时按「身份识别照片」URL 下载并录脸；无图或不合格仍建档，`face_status` 标为 missing/failed，列表可区分。
+4. `gallery_index.upsert_sample` 热更新内存矩阵。手机号为业务唯一键。
 
 ## 识别流程
 

@@ -28,6 +28,18 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 首次启动会加载 `buffalo_l`（约 326MB，已下载则直接用 `%USERPROFILE%\.insightface\models\buffalo_l\`）。
 
+## 人员与 Excel 导入
+
+人员以**手机号**为唯一键，字段含姓名、所在城市、学院、学历、入学年份、票种、报名状态、身份识别照片 URL 等。
+
+在 `/admin` 可点击「导入 Excel」，上传互动吧导出的 **`.xlsx`**（不支持 `.xls`，请另存为 xlsx）。导入时会：
+
+- 按手机号新建或更新；
+- 下载「身份识别照片」URL 并自动录脸；
+- 无照片或人脸不合格仍建档，列表用标签标出「无照片 / 人脸不合格」。
+
+**数据库不做迁移**：本版字段变更后请删除 `data/app.db` 再启动（旧试验数据不保留）。
+
 ## 摄像头与 HTTPS
 
 浏览器 `getUserMedia` 需要安全上下文：`https://` 或 `http://localhost`。

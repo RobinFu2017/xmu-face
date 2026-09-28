@@ -1,32 +1,76 @@
-/** 管理后台页面脚本：人员列表 / 详情上传 / 日志。 */
+/** 管理后台：人员列表/导入/详情/日志。 */
+const FACE_BADGE = {
+  ok: "badge ok",
+  missing: "badge warn",
+  failed: "badge bad",
+  none: "badge",
+};
+
 const AdminPeople = {
   async init() {
     document.getElementById("btnSearch").addEventListener("click", () => this.load());
+    document.getElementById("importFile").addEventListener("change", (e) => this.importExcel(e));
     await this.load();
     const stats = await fetch("/api/stats").then((r) => r.json());
     document.getElementById("statsLine").textContent =
-      `人员 ${stats.person_count} · 样本 ${stats.sample_count} · 索引 ${stats.index_size} · 阈值 ${stats.match_threshold}`;
+      `人员 ${stats.person_count} · 样本 ${stats.sample_count} · 索引 ${stats.index_size} · 人脸不合格 ${stats.face_failed} · 无照片 ${stats.face_missing} · 阈值 ${stats.match_threshold}`;
+  },
+
+  async importExcel(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    const msg = document.getElementById("importMsg");
+    if (!file) return;
+    msg.style.color = "";
+    msg.textContent = "导入中，请稍候（含下载照片与录脸）…";
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/people/import", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        msg.textContent = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+        return;
+      }
+      msg.style.color = "#0b6e4f";
+      msg.textContent =
+        `导入完成：新建 ${data.created}，更新 ${data.updated}，录脸成功 ${data.face_ok}，录脸失败 ${data.face_failed}` +
+        (data.skipped && data.skipped.length ? `，跳过 ${data.skipped.length}` : "");
+      this.load();
+    } catch (err) {
+      msg.textContent = "导入失败: " + err.message;
+    }
   },
 
   async load() {
     const q = document.getElementById("searchQ").value.trim();
     const status = document.getElementById("statusFilter").value;
+    const face_status = document.getElementById("faceFilter").value;
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (status) params.set("status", status);
+    if (face_status) params.set("face_status", face_status);
     const data = await fetch("/api/people?" + params.toString()).then((r) => r.json());
     const tbody = document.querySelector("#peopleTable tbody");
     tbody.innerHTML = "";
     for (const p of data.items) {
       const tr = document.createElement("tr");
+      const faceTitle = p.face_message ? ` title="${escapeAttr(p.face_message)}"` : "";
       tr.innerHTML = `
-        <td>${escapeHtml(p.employee_no)}</td>
         <td><a href="/admin/people/${p.id}">${escapeHtml(p.name)}</a></td>
-        <td>${escapeHtml(p.department || "")}</td>
+        <td>${escapeHtml(p.phone)}</td>
+        <td>${escapeHtml(p.college || "")}</td>
+        <td>${escapeHtml(p.ticket_type || "")}</td>
+        <td>${escapeHtml(p.signup_status || "")}</td>
+        <td><span class="${FACE_BADGE[p.face_status] || "badge"}"${faceTitle}>${escapeHtml(
+          p.face_status_label || p.face_status
+        )}</span></td>
         <td>${p.sample_count}</td>
-        <td>${p.status}</td>
+        <td>${p.status === "active" ? "启用" : "停用"}</td>
         <td>
-          <button data-id="${p.id}" data-act="toggle" type="button">${p.status === "active" ? "停用" : "启用"}</button>
+          <button data-id="${p.id}" data-act="toggle" type="button">${
+            p.status === "active" ? "停用" : "启用"
+          }</button>
           <button data-id="${p.id}" data-act="del" type="button">删除</button>
         </td>`;
       tbody.appendChild(tr);
@@ -64,12 +108,36 @@ const AdminPerson = {
     }
   },
 
+  fieldsFromForm() {
+    return {
+      name: document.getElementById("name").value.trim(),
+      city: document.getElementById("city").value.trim(),
+      college: document.getElementById("college").value.trim(),
+      education: document.getElementById("education").value.trim(),
+      enroll_year: document.getElementById("enroll_year").value.trim(),
+      ticket_type: document.getElementById("ticket_type").value.trim(),
+      signup_status: document.getElementById("signup_status").value.trim(),
+      photo_url: document.getElementById("photo_url").value.trim(),
+    };
+  },
+
   async load() {
     const p = await fetch(`/api/people/${this.personId}`).then((r) => r.json());
-    document.getElementById("employee_no").value = p.employee_no;
+    document.getElementById("phone").value = p.phone;
     document.getElementById("name").value = p.name;
-    document.getElementById("department").value = p.department || "";
+    document.getElementById("city").value = p.city || "";
+    document.getElementById("college").value = p.college || "";
+    document.getElementById("education").value = p.education || "";
+    document.getElementById("enroll_year").value = p.enroll_year || "";
+    document.getElementById("ticket_type").value = p.ticket_type || "";
+    document.getElementById("signup_status").value = p.signup_status || "";
+    document.getElementById("photo_url").value = p.photo_url || "";
     document.getElementById("status").value = p.status;
+    const faceLine = document.getElementById("faceStatusLine");
+    faceLine.textContent =
+      `人脸状态：${p.face_status_label || p.face_status}` +
+      (p.face_message ? `（${p.face_message}）` : "");
+
     const box = document.getElementById("samples");
     box.innerHTML = "";
     for (const s of p.samples || []) {
@@ -93,14 +161,13 @@ const AdminPerson = {
 
   async save(e) {
     e.preventDefault();
-    const name = document.getElementById("name").value.trim();
-    const department = document.getElementById("department").value.trim();
+    const body = this.fieldsFromForm();
     if (!this.personId) {
-      const employee_no = document.getElementById("employee_no").value.trim();
+      body.phone = document.getElementById("phone").value.trim();
       const res = await fetch("/api/people", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employee_no, name, department }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -110,11 +177,11 @@ const AdminPerson = {
       location.href = `/admin/people/${data.id}`;
       return;
     }
-    const status = document.getElementById("status").value;
+    body.status = document.getElementById("status").value;
     const res = await fetch(`/api/people/${this.personId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, department, status }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       const data = await res.json();
@@ -129,6 +196,7 @@ const AdminPerson = {
     const fileInput = document.getElementById("faceFile");
     const msg = document.getElementById("uploadMsg");
     msg.textContent = "";
+    msg.style.color = "";
     if (!fileInput.files.length) {
       msg.textContent = "请选择图片";
       return;
@@ -156,10 +224,10 @@ const AdminLogs = {
   },
   async load() {
     const matched = document.getElementById("matchedFilter").value;
-    const employee_no = document.getElementById("empFilter").value.trim();
+    const phone = document.getElementById("phoneFilter").value.trim();
     const params = new URLSearchParams({ limit: "100" });
     if (matched) params.set("matched", matched);
-    if (employee_no) params.set("employee_no", employee_no);
+    if (phone) params.set("phone", phone);
     const data = await fetch("/api/logs?" + params.toString()).then((r) => r.json());
     const tbody = document.querySelector("#logsTable tbody");
     tbody.innerHTML = "";
@@ -169,7 +237,7 @@ const AdminLogs = {
         <td>${escapeHtml(r.created_at || "")}</td>
         <td>${escapeHtml(r.device_label || "")}</td>
         <td>${r.matched ? "命中" : "未命中"}</td>
-        <td>${escapeHtml((r.employee_no || "") + " " + (r.person_name || ""))}</td>
+        <td>${escapeHtml((r.person_name || "") + " " + (r.phone || ""))}</td>
         <td>${Number(r.score).toFixed(3)}</td>
         <td>${Number(r.second_score).toFixed(3)}</td>
         <td>${escapeHtml(r.error_code || "")}</td>`;
@@ -184,4 +252,8 @@ function escapeHtml(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function escapeAttr(s) {
+  return escapeHtml(s).replace(/'/g, "&#39;");
 }

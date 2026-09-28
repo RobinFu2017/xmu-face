@@ -24,7 +24,7 @@ class SearchHit:
     """按人聚合后的命中结果。"""
 
     person_id: int
-    employee_no: str
+    phone: str
     name: str
     score: float
 
@@ -35,10 +35,9 @@ class GalleryIndex:
     def __init__(self) -> None:
         self._lock = RLock()
         self._matrix = np.zeros((0, 512), dtype=np.float32)
-        # 与矩阵行一一对应
         self._sample_ids: list[int] = []
         self._person_ids: list[int] = []
-        self._employee_nos: list[str] = []
+        self._phones: list[str] = []
         self._names: list[str] = []
 
     @property
@@ -56,14 +55,14 @@ class GalleryIndex:
         embeddings: list[np.ndarray] = []
         sample_ids: list[int] = []
         person_ids: list[int] = []
-        employee_nos: list[str] = []
+        phones: list[str] = []
         names: list[str] = []
 
         for sample, person in rows:
             embeddings.append(bytes_to_embedding(sample.embedding))
             sample_ids.append(sample.id)
             person_ids.append(person.id)
-            employee_nos.append(person.employee_no)
+            phones.append(person.phone)
             names.append(person.name)
 
         with self._lock:
@@ -73,7 +72,7 @@ class GalleryIndex:
                 self._matrix = np.zeros((0, 512), dtype=np.float32)
             self._sample_ids = sample_ids
             self._person_ids = person_ids
-            self._employee_nos = employee_nos
+            self._phones = phones
             self._names = names
 
     def upsert_sample(
@@ -81,7 +80,7 @@ class GalleryIndex:
         *,
         sample_id: int,
         person_id: int,
-        employee_no: str,
+        phone: str,
         name: str,
         embedding: np.ndarray,
         person_active: bool,
@@ -99,7 +98,7 @@ class GalleryIndex:
                 self._matrix = np.vstack([self._matrix, vec])
             self._sample_ids.append(sample_id)
             self._person_ids.append(person_id)
-            self._employee_nos.append(employee_no)
+            self._phones.append(phone)
             self._names.append(name)
 
     def remove_sample(self, sample_id: int) -> None:
@@ -129,7 +128,7 @@ class GalleryIndex:
             self.upsert_sample(
                 sample_id=sample.id,
                 person_id=person.id,
-                employee_no=person.employee_no,
+                phone=person.phone,
                 name=person.name,
                 embedding=bytes_to_embedding(sample.embedding),
                 person_active=True,
@@ -143,20 +142,15 @@ class GalleryIndex:
         threshold: float | None = None,
         exclude_person_id: int | None = None,
     ) -> tuple[SearchHit | None, float]:
-        """1:N 搜索。
-
-        返回 (最佳命中或 None, 第二名分数)。
-        exclude_person_id：录脸查重时排除本人，只看是否撞上别人。
-        """
+        """1:N 搜索。返回 (最佳命中或 None, 第二名分数)。"""
         thr = MATCH_THRESHOLD if threshold is None else threshold
         q = np.asarray(query, dtype=np.float32).reshape(512)
 
         with self._lock:
             if self._matrix.shape[0] == 0:
                 return None, 0.0
-            scores = self._matrix @ q  # (N,)
+            scores = self._matrix @ q
 
-            # 按人取最高分
             best_by_person: dict[int, tuple[float, int]] = {}
             for i, score in enumerate(scores.tolist()):
                 pid = self._person_ids[i]
@@ -178,7 +172,7 @@ class GalleryIndex:
 
             hit = SearchHit(
                 person_id=top_pid,
-                employee_no=self._employee_nos[top_idx],
+                phone=self._phones[top_idx],
                 name=self._names[top_idx],
                 score=float(top_score),
             )
@@ -196,13 +190,13 @@ class GalleryIndex:
             self._matrix = np.zeros((0, 512), dtype=np.float32)
             self._sample_ids = []
             self._person_ids = []
-            self._employee_nos = []
+            self._phones = []
             self._names = []
             return
         self._matrix = self._matrix[keep]
         self._sample_ids = [self._sample_ids[i] for i in keep]
         self._person_ids = [self._person_ids[i] for i in keep]
-        self._employee_nos = [self._employee_nos[i] for i in keep]
+        self._phones = [self._phones[i] for i in keep]
         self._names = [self._names[i] for i in keep]
 
 
