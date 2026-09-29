@@ -30,10 +30,42 @@ const AdminPeople = {
       }
     });
     document.getElementById("importFile").addEventListener("change", (e) => this.importExcel(e));
+    document.getElementById("backupFile").addEventListener("change", (e) => this.importBackup(e));
     await this.load();
+    await this.refreshStats();
+  },
+
+  async refreshStats() {
     const stats = await fetch("/api/stats").then((r) => r.json());
     document.getElementById("statsLine").textContent =
       `人员 ${stats.person_count} · 样本 ${stats.sample_count} · 索引 ${stats.index_size} · 人脸不合格 ${stats.face_failed} · 无照片 ${stats.face_missing} · 阈值 ${stats.match_threshold}`;
+  },
+
+  async importBackup(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    const msg = document.getElementById("importMsg");
+    if (!file) return;
+    if (!confirm("全量导入会替换当前全部人员和照片，且不可撤销。确定继续？")) return;
+    msg.style.color = "";
+    msg.textContent = "正在导入全量包…";
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/backup/import", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        msg.textContent = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+        return;
+      }
+      msg.style.color = "#0b6e4f";
+      msg.textContent = `全量导入完成：人员 ${data.person_count}，样本 ${data.sample_count}，索引 ${data.index_size}`;
+      this.page = 1;
+      await this.load();
+      await this.refreshStats();
+    } catch (err) {
+      msg.textContent = "全量导入失败: " + err.message;
+    }
   },
 
   async importExcel(e) {

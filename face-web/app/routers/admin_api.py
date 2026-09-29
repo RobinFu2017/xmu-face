@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
+from starlette.background import BackgroundTask
 
+from app.backup_bundle import build_export_zip, import_bundle
 from app.config import MATCH_THRESHOLD, UPLOAD_DIR
 from app.db import get_db
 from app.face_engine import FaceEngineError
@@ -333,6 +337,38 @@ def list_logs(
             for r in rows
         ]
     }
+
+
+@router.get("/backup/export")
+def export_backup() -> FileResponse:
+    """下载 app.db 快照与 uploads 照片的 zip。"""
+    try:
+        path = build_export_zip()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    print(f"export_backup: {path}")
+    return FileResponse(
+        path,
+        media_type="application/zip",
+        filename=f"face-web-{stamp}.zip",
+        background=BackgroundTask(path.unlink, missing_ok=True),
+    )
+
+
+@router.post("/backup/import")
+def import_backup(file: UploadFile = File(...)) -> dict:
+    """用全量 zip 覆盖当前数据库与照片，并重建内存索引。"""
+    filename = (file.filename or "").lower()
+    if not filename.endswith(".zip"):
+        raise HTTPException(status_code=400, detail="仅支持 .zip 全量包")
+    raw = file.file.read()
+    try:
+        return import_bundle(raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=f"导入失败: {exc}") from exc
 
 
 @router.get("/stats")

@@ -40,6 +40,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 **数据库不做迁移**：本版字段变更后请删除 `data/app.db` 再启动（旧试验数据不保留）。
 
+在 `/admin` 可「全量导出」下载 zip（`app.db` 快照 + `uploads` 照片），并在另一台用「全量导入」整库覆盖。导入会替换当前人员和照片。
+
 ## 摄像头与 HTTPS
 
 浏览器 `getUserMedia` 需要安全上下文：`https://` 或 `http://localhost`。

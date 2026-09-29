@@ -4,6 +4,11 @@
   <div class="row between">
     <h1>人员管理</h1>
     <div class="actions">
+      <a class="btn secondary" href="/api/backup/export">全量导出</a>
+      <label class="btn secondary" style="cursor:pointer;margin:0">
+        全量导入
+        <input type="file" id="backupFile" accept=".zip,application/zip" hidden />
+      </label>
       <label class="btn secondary" style="cursor:pointer;margin:0">
         导入 Excel
         <input type="file" id="importFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
