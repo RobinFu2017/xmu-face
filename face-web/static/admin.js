@@ -7,8 +7,28 @@ const FACE_BADGE = {
 };
 
 const AdminPeople = {
+  page: 1,
+  pageSize: 100,
+  total: 0,
+
   async init() {
-    document.getElementById("btnSearch").addEventListener("click", () => this.load());
+    document.getElementById("btnSearch").addEventListener("click", () => {
+      this.page = 1;
+      this.load();
+    });
+    document.getElementById("btnPrevPage").addEventListener("click", () => {
+      if (this.page > 1) {
+        this.page -= 1;
+        this.load();
+      }
+    });
+    document.getElementById("btnNextPage").addEventListener("click", () => {
+      const pages = Math.max(1, Math.ceil(this.total / this.pageSize));
+      if (this.page < pages) {
+        this.page += 1;
+        this.load();
+      }
+    });
     document.getElementById("importFile").addEventListener("change", (e) => this.importExcel(e));
     await this.load();
     const stats = await fetch("/api/stats").then((r) => r.json());
@@ -36,6 +56,7 @@ const AdminPeople = {
       msg.textContent =
         `导入完成：新建 ${data.created}，更新 ${data.updated}，录脸成功 ${data.face_ok}，录脸失败 ${data.face_failed}` +
         (data.skipped && data.skipped.length ? `，跳过 ${data.skipped.length}` : "");
+      this.page = 1;
       this.load();
     } catch (err) {
       msg.textContent = "导入失败: " + err.message;
@@ -50,14 +71,20 @@ const AdminPeople = {
     if (q) params.set("q", q);
     if (status) params.set("status", status);
     if (face_status) params.set("face_status", face_status);
+    params.set("page", String(this.page));
     const data = await fetch("/api/people?" + params.toString()).then((r) => r.json());
+    this.total = data.total || 0;
+    this.pageSize = data.page_size || 100;
+    this.page = data.page || this.page;
+    const pages = Math.max(1, Math.ceil(this.total / this.pageSize) || 1);
     const tbody = document.querySelector("#peopleTable tbody");
     tbody.innerHTML = "";
+    const base = (this.page - 1) * this.pageSize;
     data.items.forEach((p, idx) => {
       const tr = document.createElement("tr");
       const faceTitle = p.face_message ? ` title="${escapeAttr(p.face_message)}"` : "";
       tr.innerHTML = `
-        <td>${idx + 1}</td>
+        <td>${base + idx + 1}</td>
         <td><a href="/admin/people/${p.id}">${escapeHtml(p.name)}</a></td>
         <td>${escapeHtml(p.phone)}</td>
         <td>${escapeHtml(p.college || "")}</td>
@@ -76,6 +103,10 @@ const AdminPeople = {
         </td>`;
       tbody.appendChild(tr);
     });
+    document.getElementById("pageInfo").textContent =
+      `第 ${this.page} / ${pages} 页 · 共 ${this.total} 人`;
+    document.getElementById("btnPrevPage").disabled = this.page <= 1;
+    document.getElementById("btnNextPage").disabled = this.page >= pages;
     tbody.querySelectorAll("button").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-id");

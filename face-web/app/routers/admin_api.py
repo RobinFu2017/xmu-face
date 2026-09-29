@@ -89,24 +89,36 @@ def list_people(
     q: str = "",
     status: str = "",
     face_status: str = "",
+    page: int = Query(1, ge=1),
     db: Session = Depends(get_db),
 ) -> dict:
-    """人员列表，支持姓名/手机模糊搜索。"""
-    stmt = select(Person).options(selectinload(Person.samples)).order_by(Person.id.desc())
+    """人员列表，支持姓名/手机模糊搜索与分页（每页 100）。"""
+    page_size = 100
+    filters = []
     if q:
         like = f"%{q}%"
-        stmt = stmt.where((Person.name.like(like)) | (Person.phone.like(like)))
+        filters.append((Person.name.like(like)) | (Person.phone.like(like)))
     if status in ("active", "disabled"):
-        stmt = stmt.where(Person.status == status)
+        filters.append(Person.status == status)
     if face_status in ("ok", "missing", "failed", "none"):
-        stmt = stmt.where(Person.face_status == face_status)
+        filters.append(Person.face_status == face_status)
+
+    count_stmt = select(func.count()).select_from(Person)
+    for f in filters:
+        count_stmt = count_stmt.where(f)
+    total = int(db.scalar(count_stmt) or 0)
+
+    stmt = select(Person).options(selectinload(Person.samples)).order_by(Person.id.desc())
+    for f in filters:
+        stmt = stmt.where(f)
+    stmt = stmt.offset((page - 1) * page_size).limit(page_size)
     people = db.scalars(stmt).all()
     items = []
     for p in people:
         d = _person_dict(p)
         d["face_status_label"] = FACE_STATUS_LABEL.get(p.face_status, p.face_status)
         items.append(d)
-    return {"items": items}
+    return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
 @router.post("/people")
