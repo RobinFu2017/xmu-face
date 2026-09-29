@@ -1,15 +1,43 @@
-"""HTML 页面路由：管理后台与平板识别页。无登录，知道路径即可打开。"""
+"""HTML 页面路由：管理后台需登录，平板识别页公开。"""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app.auth import check_admin_password, clear_login_cookie, set_login_cookie
 from app.config import ROOT_DIR
 
 router = APIRouter(tags=["pages"])
 templates = Jinja2Templates(directory=str(ROOT_DIR / "templates"))
+
+
+@router.get("/login", response_class=HTMLResponse)
+def login_page(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request, "login.html", {"title": "登录", "error": ""})
+
+
+@router.post("/login", response_model=None)
+def login_submit(request: Request, password: str = Form("")):
+    ok, message = check_admin_password(password)
+    if not ok:
+        return templates.TemplateResponse(
+            request,
+            "login.html",
+            {"title": "登录", "error": message},
+            status_code=401,
+        )
+    response = RedirectResponse(url="/admin", status_code=303)
+    set_login_cookie(response)
+    return response
+
+
+@router.post("/logout")
+def logout() -> RedirectResponse:
+    response = RedirectResponse(url="/login", status_code=303)
+    clear_login_cookie(response)
+    return response
 
 
 @router.get("/", response_class=HTMLResponse)

@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.auth import auth_middleware
 from app.config import DATA_DIR, QUERY_DIR, ROOT_DIR, UPLOAD_DIR
 from app.db import SessionLocal, init_db
 from app.face_engine import face_engine
@@ -45,6 +46,9 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 # 原图通过 /media 访问（对应 data/uploads）
 app.mount("/media", StaticFiles(directory=str(UPLOAD_DIR)), name="media")
+
+# 包住页面、API 与 /media；识别页与 POST /api/recognize 在中间件内放行
+app.middleware("http")(auth_middleware)
 
 
 def run() -> None:
