@@ -1,6 +1,6 @@
 # 识别页配置
 
-路径：`/recognize`
+路径：`/recognize`（调试页，含按钮与下拉）以及 `/recognize/stage`（正式展示页，无按钮）。
 
 ## 抓拍与摄像头参数
 
@@ -52,3 +52,25 @@ http://192.168.1.100:8000/guide/camera
 ## 设备备注
 
 页面「设备备注」随识别请求以 `device_label` 写入日志，便于区分多台平板，**不是**访问令牌。
+
+## 正式展示页 `/recognize/stage`
+
+全屏切图界面，进页自动开摄像头并按间隔识别。**没有按钮**，配置只读 URL，不读写 `localStorage`。
+
+| 参数 | 取值 | 说明 |
+|---|---|---|
+| `capture_interval_ms` | 整数毫秒 | 自动间隔，默认 `1500`，最小 `500` |
+| `facing` | `environment` / `user` | 后置 / 前置，默认 `environment` |
+| `device_label` | 字符串 | 写入识别日志，页面不展示 |
+
+示例：
+
+```text
+/recognize/stage?capture_interval_ms=2000&facing=user
+```
+
+- 前置预览镜像，上传 JPEG 仍用原始画面。
+- 上一次 `POST /api/recognize` 未返回前不会再发请求。
+- 页面隐藏时暂停定时器。
+- 识别成功时在人脸框右下角弹出气泡（姓名、打码手机、学院、入学年份），约 3 秒无新命中后收起。
+- 摄像头打不开时只显示一行提示。

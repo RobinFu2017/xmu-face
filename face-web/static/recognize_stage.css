@@ -1,0 +1,279 @@
+/* 正式识别展示页：按 composite 2508×1672 实测坐标铺开，无顶栏无按钮 */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #9ec8ef;
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.stage {
+  position: relative;
+  width: min(100vw, calc(100vh * 2508 / 1672));
+  height: min(100vh, calc(100vw * 1672 / 2508));
+  margin: 0 auto;
+  overflow: hidden;
+  background: #9ec8ef;
+}
+
+.layer {
+  position: absolute;
+  pointer-events: none;
+  max-width: none;
+  display: block;
+}
+
+.bg {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.title {
+  left: 28.71%;
+  top: 2.99%;
+  width: 42.62%;
+  height: auto;
+  z-index: 8;
+}
+
+/* 面板：合成稿尺寸，底边约 70%，与地标上沿相交 */
+.panel-wrap {
+  position: absolute;
+  left: 6.94%;
+  top: 13%;
+  width: 86.44%;
+  height: 70.22%;
+  z-index: 2;
+}
+
+.panel-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 摄像头嵌在面板内侧，露出边框发光与侧边刻度 */
+.viewport {
+  position: absolute;
+  left: 3.2%;
+  top: 4.5%;
+  width: 93.6%;
+  height: 91%;
+  border-radius: 2.2% / 3.4%;
+  overflow: hidden;
+  z-index: 2;
+  background: rgba(20, 40, 70, 0.35);
+}
+
+#video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #1a2a3a;
+}
+
+#video.mirror {
+  transform: scaleX(-1);
+}
+
+/* 人脸框：视口正中 */
+.focus-area {
+  position: absolute;
+  left: 27%;
+  top: 22%;
+  width: 46%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.face-frame {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.eye-frame {
+  position: absolute;
+  left: 16%;
+  top: 22%;
+  width: 68%;
+  height: auto;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.success-bubble {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  transform: translate(28%, 18%);
+  z-index: 5;
+  min-width: 10.5rem;
+  max-width: 90%;
+  padding: 0.7rem 0.85rem 0.55rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0.4rem 1.2rem rgba(40, 30, 20, 0.18);
+  color: #3a2a22;
+  animation: bubble-in 0.28s ease-out;
+}
+
+.success-bubble[hidden] {
+  display: none !important;
+}
+
+.bubble-title {
+  text-align: center;
+  font-weight: 700;
+  font-size: clamp(0.85rem, 1.6vw, 1.1rem);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.15rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.bubble-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  padding: 0.28rem 0.1rem;
+  font-size: clamp(0.7rem, 1.25vw, 0.92rem);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.bubble-row:last-child {
+  border-bottom: none;
+}
+
+.bubble-row .label {
+  flex: 0 0 auto;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.bubble-row .value {
+  flex: 1 1 auto;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: translate(28%, 18%) translateY(0.4rem) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(28%, 18%) scale(1);
+  }
+}
+
+/* 层级：背景 < 面板 < 地标 < 波浪 < 凤凰花 < 标题 */
+.wave {
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+  z-index: 6;
+}
+
+.landmark {
+  z-index: 4;
+}
+
+.tower {
+  left: 15.55%;
+  top: 61.3%;
+  width: 15.63%;
+  height: auto;
+  z-index: 4;
+}
+
+.lingnan {
+  left: 80.94%;
+  top: 67.28%;
+  width: 18.9%;
+  height: auto;
+  z-index: 4;
+}
+
+.arch {
+  left: 80.74%;
+  top: 72.61%;
+  width: 15.95%;
+  height: auto;
+  z-index: 5;
+}
+
+.statue {
+  left: 76.95%;
+  top: 72.97%;
+  width: 3.99%;
+  height: auto;
+  z-index: 5;
+}
+
+.flower-left {
+  left: 0;
+  top: 74.46%;
+  width: 20.49%;
+  height: auto;
+  z-index: 7;
+}
+
+.flower-right {
+  left: 82.34%;
+  top: 80.14%;
+  width: 17.42%;
+  height: auto;
+  z-index: 7;
+}
+
+.status-hint {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  max-width: 70%;
+  padding: 0.75rem 1.1rem;
+  border-radius: 0.6rem;
+  background: rgba(20, 30, 50, 0.72);
+  color: #fff;
+  font-size: clamp(0.85rem, 1.6vw, 1.05rem);
+  text-align: center;
+  line-height: 1.45;
+  pointer-events: none;
+}
+
+.status-hint[hidden] {
+  display: none !important;
+}

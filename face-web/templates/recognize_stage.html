@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>南强文脉 · 人脸识别</title>
+  <link rel="stylesheet" href="/static/recognize_stage.css" />
+</head>
+<body>
+  <div class="stage" id="stage">
+    <img class="layer bg" src="/static/stage/background.png" alt="" draggable="false" />
+
+    <div class="panel-wrap">
+      <img class="panel-frame" src="/static/stage/tech-panel.png" alt="" draggable="false" />
+      <div class="viewport">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas" class="hidden"></canvas>
+        <div class="focus-area">
+          <img class="face-frame" src="/static/stage/face-frame.png" alt="" draggable="false" />
+          <img class="eye-frame" src="/static/stage/eye-frame.png" alt="" draggable="false" />
+          <div id="successBubble" class="success-bubble" hidden>
+            <div class="bubble-title">识别成功</div>
+            <div class="bubble-row"><span class="label">姓名:</span><span id="bubbleName" class="value"></span></div>
+            <div class="bubble-row"><span class="label">手机:</span><span id="bubblePhone" class="value"></span></div>
+            <div class="bubble-row"><span class="label">学院:</span><span id="bubbleCollege" class="value"></span></div>
+            <div class="bubble-row"><span class="label">入学年份:</span><span id="bubbleYear" class="value"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <img class="layer landmark tower" src="/static/stage/landmark-tower.png" alt="" draggable="false" />
+    <img class="layer landmark lingnan" src="/static/stage/landmark-lingnan.png" alt="" draggable="false" />
+    <img class="layer landmark arch" src="/static/stage/landmark-arch.png" alt="" draggable="false" />
+    <img class="layer landmark statue" src="/static/stage/landmark-statue.png" alt="" draggable="false" />
+    <img class="layer wave" src="/static/stage/wave-bottom.png" alt="" draggable="false" />
+    <img class="layer flower-left" src="/static/stage/flower-left.png" alt="" draggable="false" />
+    <img class="layer flower-right" src="/static/stage/flower-right.png" alt="" draggable="false" />
+    <img class="layer title" src="/static/stage/title.png" alt="南强文脉 粤善拓新" draggable="false" />
+
+    <div id="statusHint" class="status-hint" hidden></div>
+  </div>
+  <script src="/static/recognize_stage.js"></script>
+</body>
+</html>

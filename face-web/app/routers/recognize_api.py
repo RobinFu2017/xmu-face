@@ -12,7 +12,7 @@ from app.config import MATCH_THRESHOLD, QUERY_DIR
 from app.db import get_db
 from app.face_engine import FaceEngineError, face_engine
 from app.gallery_index import gallery_index
-from app.models import RecognitionLog
+from app.models import Person, RecognitionLog
 
 router = APIRouter(prefix="/api", tags=["recognize"])
 
@@ -24,7 +24,7 @@ async def recognize(
     save_query: str = Form("0"),
     db: Session = Depends(get_db),
 ) -> dict:
-    """1:N 识别。命中时 person 含 id / phone / name。"""
+    """1:N 识别。命中时 person 含 id / phone / name / college / enroll_year。"""
     raw = await image.read()
     label = (device_label or "").strip()[:128]
     query_rel = ""
@@ -105,9 +105,16 @@ async def recognize(
     )
     db.add(log)
     db.commit()
+    person = db.get(Person, hit.person_id)
     return {
         "matched": True,
-        "person": {"id": hit.person_id, "phone": hit.phone, "name": hit.name},
+        "person": {
+            "id": hit.person_id,
+            "phone": hit.phone,
+            "name": hit.name,
+            "college": person.college if person else "",
+            "enroll_year": person.enroll_year if person else "",
+        },
         "score": hit.score,
         "second_score": second,
         "threshold": MATCH_THRESHOLD,

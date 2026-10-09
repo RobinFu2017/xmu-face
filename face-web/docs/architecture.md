@@ -4,6 +4,7 @@
 
 - **浏览器管理页**（`/admin*`）：录入人员与人脸、停用/删除、查日志。
 - **平板识别页**（`/recognize`）：摄像头抓拍，POST 图片到服务端。
+- **正式展示页**（`/recognize/stage`）：全屏切图界面，URL 控制间隔与前后摄。
 - **FastAPI**：业务 API + 页面渲染；无鉴权。
 - **InsightFace buffalo_l**：检测 + ArcFace 512 维特征（ONNX Runtime CPU）。
 - **内存索引**（`gallery_index`）：`N×512` 矩阵，精确点积 1:N。
