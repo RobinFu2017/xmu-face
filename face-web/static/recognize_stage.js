@@ -5,14 +5,17 @@
  * facing=user|environment：前置 / 后置，默认 environment
  * device_label：写入识别日志，页面不展示
  *
- * 上一次 /api/recognize 未返回前不发起下一次。命中后弹出气泡，
- * 连续约 3 秒没有新命中再收起。
+ * 命中：面板变绿 + 成功气泡；失败：面板变红 + 失败气泡。
+ * 连续约 3 秒没有新结果再收起。
  */
 (function () {
   const video = document.getElementById("video");
   const canvas = document.getElementById("canvas");
   const hintEl = document.getElementById("statusHint");
+  const panelWrap = document.getElementById("panelWrap");
   const bubbleEl = document.getElementById("successBubble");
+  const bubbleTitle = document.getElementById("bubbleTitle");
+  const bubbleDetail = document.getElementById("bubbleDetail");
   const bubbleName = document.getElementById("bubbleName");
   const bubblePhone = document.getElementById("bubblePhone");
   const bubbleCollege = document.getElementById("bubbleCollege");
@@ -55,17 +58,45 @@
     return s || "—";
   }
 
-  function fillBubble(person) {
+  function scheduleHide() {
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      bubbleEl.hidden = true;
+      panelWrap.classList.remove("matched", "failed");
+      hideTimer = null;
+    }, HIDE_MS);
+  }
+
+  function showSuccess(person) {
+    panelWrap.classList.remove("failed");
+    panelWrap.classList.add("matched");
+    bubbleEl.classList.remove("is-fail");
+    bubbleTitle.textContent = "识别成功";
+    bubbleDetail.textContent = "";
     bubbleName.textContent = person.name || "—";
     bubblePhone.textContent = maskPhone(person.phone);
     bubbleCollege.textContent = person.college || "—";
     bubbleYear.textContent = person.enroll_year || "—";
     bubbleEl.hidden = false;
-    if (hideTimer) clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => {
-      bubbleEl.hidden = true;
-      hideTimer = null;
-    }, HIDE_MS);
+    scheduleHide();
+  }
+
+  function failMessage(data) {
+    const code = (data && data.error_code) || "";
+    if (code === "no_face") return "未检测到人脸";
+    if (code === "below_threshold") return "未匹配到人员";
+    if (data && data.message) return data.message;
+    return "识别失败";
+  }
+
+  function showFail(detail) {
+    panelWrap.classList.remove("matched");
+    panelWrap.classList.add("failed");
+    bubbleEl.classList.add("is-fail");
+    bubbleTitle.textContent = "识别失败";
+    bubbleDetail.textContent = detail || "识别失败";
+    bubbleEl.hidden = false;
+    scheduleHide();
   }
 
   function stopStream() {
@@ -145,10 +176,12 @@
       const res = await fetch("/api/recognize", { method: "POST", body: fd });
       const data = await res.json();
       if (data.matched && data.person) {
-        fillBubble(data.person);
+        showSuccess(data.person);
+      } else {
+        showFail(failMessage(data));
       }
     } catch (err) {
-      // 正式页不打断画面；失败等下一轮
+      showFail("识别请求失败");
     } finally {
       inFlight = false;
     }

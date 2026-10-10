@@ -18,6 +18,8 @@
   const labelEl = document.getElementById("deviceLabel");
   const btnCapture = document.getElementById("btnCapture");
   const btnStartCam = document.getElementById("btnStartCam");
+  const btnStopCam = document.getElementById("btnStopCam");
+  const btnOpenStage = document.getElementById("btnOpenStage");
 
   const LS_MODE = "faceweb_capture_mode";
   const LS_INTERVAL = "faceweb_capture_interval_ms";
@@ -201,6 +203,26 @@
   btnStartCam.addEventListener("click", () =>
     startCamera(false).catch((e) => alert(e.message))
   );
+  btnStopCam.addEventListener("click", () => {
+    stopTimer();
+    stopStream();
+    resultEl.textContent = "摄像头已关闭";
+    resultEl.className = "result";
+  });
+  btnOpenStage.addEventListener("click", () => {
+    persist();
+    stopTimer();
+    stopStream();
+    let interval = Number(intervalEl.value) || 1500;
+    if (!Number.isFinite(interval) || interval < 500) interval = 500;
+    const facing = facingEl.value === "user" ? "user" : "environment";
+    const params = new URLSearchParams();
+    params.set("capture_interval_ms", String(interval));
+    params.set("facing", facing);
+    const label = labelEl.value.trim();
+    if (label) params.set("device_label", label);
+    location.href = "/recognize/stage?" + params.toString();
+  });
   btnCapture.addEventListener("click", () => captureAndRecognize());
   window.addEventListener("beforeunload", () => {
     stopTimer();

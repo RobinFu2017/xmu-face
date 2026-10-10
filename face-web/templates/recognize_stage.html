@@ -8,10 +8,10 @@
 </head>
 <body>
   <div class="stage" id="stage">
-    <img class="layer bg" src="/static/stage/background.png" alt="" draggable="false" />
+    <img class="layer bg" src="/static/stage/background.jpg" alt="" draggable="false" />
 
-    <div class="panel-wrap">
-      <img class="panel-frame" src="/static/stage/tech-panel.png" alt="" draggable="false" />
+    <div class="panel-wrap" id="panelWrap">
+      <img class="panel-frame" src="/static/stage/tech-panel.webp" alt="" draggable="false" />
       <div class="viewport">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas" class="hidden"></canvas>
@@ -19,11 +19,14 @@
           <img class="face-frame" src="/static/stage/face-frame.png" alt="" draggable="false" />
           <img class="eye-frame" src="/static/stage/eye-frame.png" alt="" draggable="false" />
           <div id="successBubble" class="success-bubble" hidden>
-            <div class="bubble-title">识别成功</div>
-            <div class="bubble-row"><span class="label">姓名:</span><span id="bubbleName" class="value"></span></div>
-            <div class="bubble-row"><span class="label">手机:</span><span id="bubblePhone" class="value"></span></div>
-            <div class="bubble-row"><span class="label">学院:</span><span id="bubbleCollege" class="value"></span></div>
-            <div class="bubble-row"><span class="label">入学年份:</span><span id="bubbleYear" class="value"></span></div>
+            <div class="bubble-title" id="bubbleTitle">识别成功</div>
+            <div class="bubble-detail" id="bubbleDetail"></div>
+            <div class="bubble-fields" id="bubbleFields">
+              <div class="bubble-row"><span class="label">姓名:</span><span id="bubbleName" class="value"></span></div>
+              <div class="bubble-row"><span class="label">手机:</span><span id="bubblePhone" class="value"></span></div>
+              <div class="bubble-row"><span class="label">学院:</span><span id="bubbleCollege" class="value"></span></div>
+              <div class="bubble-row"><span class="label">入学年份:</span><span id="bubbleYear" class="value"></span></div>
+            </div>
           </div>
         </div>
       </div>
