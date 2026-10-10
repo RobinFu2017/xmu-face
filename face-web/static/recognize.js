@@ -29,6 +29,15 @@
   let stream = null;
   let timer = null;
   let inFlight = false; // 请求进行中则跳过自动抓拍
+  let starting = false; // 正在打开/切换摄像头
+
+  function syncButtons() {
+    const open = !!stream;
+    btnStartCam.disabled = open || inFlight || starting;
+    btnStopCam.disabled = !open || inFlight || starting;
+    btnCapture.disabled = !open || inFlight || starting;
+    btnOpenStage.disabled = false;
+  }
 
   function readConfig() {
     const params = new URLSearchParams(location.search);
@@ -54,6 +63,7 @@
     labelEl.value = localStorage.getItem(LS_LABEL) || "";
     persist();
     applyModeUi();
+    syncButtons();
   }
 
   function persist() {
@@ -82,34 +92,45 @@
    */
   async function startCamera(forceRestart) {
     if (stream && !forceRestart) return;
+    if (starting) return;
 
+    starting = true;
+    syncButtons();
     stopTimer();
     stopStream();
 
     const facing = facingEl.value === "user" ? "user" : "environment";
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode: { ideal: facing },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-      });
-    } catch (e1) {
       try {
-        // 单摄或不支持 facingMode 时回退默认设备
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        if (forceRestart) {
-          alert("无法切换到所选摄像头，已使用默认摄像头");
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: { ideal: facing },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        });
+      } catch (e1) {
+        try {
+          // 单摄或不支持 facingMode 时回退默认设备
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
+          });
+          if (forceRestart) {
+            alert("无法切换到所选摄像头，已使用默认摄像头");
+          }
+        } catch (e2) {
+          throw e2;
         }
-      } catch (e2) {
-        throw e2;
       }
+      video.srcObject = stream;
+      await video.play();
+      restartTimer();
+    } finally {
+      starting = false;
+      syncButtons();
     }
-    video.srcObject = stream;
-    await video.play();
-    restartTimer();
   }
 
   function stopTimer() {
@@ -145,11 +166,12 @@
     if (!stream) {
       resultEl.textContent = "请先打开摄像头";
       resultEl.className = "result fail";
+      syncButtons();
       return;
     }
     if (inFlight) return;
     inFlight = true;
-    btnCapture.disabled = true;
+    syncButtons();
     try {
       const blob = await grabJpegBlob();
       if (!blob) throw new Error("抓拍失败");
@@ -164,7 +186,7 @@
       resultEl.className = "result fail";
     } finally {
       inFlight = false;
-      btnCapture.disabled = false;
+      syncButtons();
     }
   }
 
@@ -201,13 +223,17 @@
   });
   labelEl.addEventListener("change", persist);
   btnStartCam.addEventListener("click", () =>
-    startCamera(false).catch((e) => alert(e.message))
+    startCamera(false).catch((e) => {
+      alert(e.message);
+      syncButtons();
+    })
   );
   btnStopCam.addEventListener("click", () => {
     stopTimer();
     stopStream();
     resultEl.textContent = "摄像头已关闭";
     resultEl.className = "result";
+    syncButtons();
   });
   btnOpenStage.addEventListener("click", () => {
     persist();
