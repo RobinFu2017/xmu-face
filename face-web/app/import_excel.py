@@ -24,7 +24,7 @@ from app.face_engine import (
 from app.gallery_index import gallery_index
 from app.models import FaceSample, Person, utcnow
 
-# 中文表头 → 内部字段；「服务状态」映射为报名状态
+# 中文表头 → 内部字段
 HEADER_MAP = {
     "姓名": "name",
     "手机": "phone",
@@ -34,7 +34,6 @@ HEADER_MAP = {
     "入学年份": "enroll_year",
     "身份识别照片": "photo_url",
     "票种": "ticket_type",
-    "服务状态": "signup_status",
     "报名状态": "signup_status",
 }
 
@@ -87,8 +86,6 @@ def parse_xlsx_rows(data: bytes) -> list[dict[str, str]]:
     for row in rows[header_idx + 1 :]:
         if not row or all(c is None or str(c).strip() == "" for c in row):
             continue
-        item = {field: "" for field in HEADER_MAP.values()}
-        # 去重字段名（服务状态/报名状态都映射 signup_status）
         item = {
             "name": "",
             "phone": "",
@@ -191,6 +188,9 @@ def import_people_from_xlsx(data: bytes, db: Session) -> ImportResult:
             select(Person).options(selectinload(Person.samples)).where(Person.phone == phone)
         )
         photo_url = row.get("photo_url", "").strip()
+        signup_status = row.get("signup_status", "")
+        # 已退款：照常建档/录脸，但不参与识别比对
+        person_status = "disabled" if signup_status == "已退款" else "active"
         is_new = person is None
 
         if is_new:
@@ -202,17 +202,17 @@ def import_people_from_xlsx(data: bytes, db: Session) -> ImportResult:
                 education=row.get("education", ""),
                 enroll_year=row.get("enroll_year", ""),
                 ticket_type=row.get("ticket_type", ""),
-                signup_status=row.get("signup_status", ""),
+                signup_status=signup_status,
                 photo_url=photo_url,
                 face_status="none",
                 face_message="",
-                status="active",
+                status=person_status,
             )
             db.add(person)
             db.flush()
             person.samples = []
             result.created += 1
-            print(f"[import] {progress} create {phone} {name}")
+            print(f"[import] {progress} create {phone} {name} status={person_status}")
         else:
             person.name = name
             person.city = row.get("city", "")
@@ -220,10 +220,11 @@ def import_people_from_xlsx(data: bytes, db: Session) -> ImportResult:
             person.education = row.get("education", "")
             person.enroll_year = row.get("enroll_year", "")
             person.ticket_type = row.get("ticket_type", "")
-            person.signup_status = row.get("signup_status", "")
+            person.signup_status = signup_status
+            person.status = person_status
             person.updated_at = utcnow()
             result.updated += 1
-            print(f"[import] {progress} update {phone} {name}")
+            print(f"[import] {progress} update {phone} {name} status={person_status}")
 
         # 录脸：无 URL → missing；有 URL 且（新建 / URL 变化 / 尚无成功脸）则尝试
         need_enroll = False
@@ -258,6 +259,9 @@ def import_people_from_xlsx(data: bytes, db: Session) -> ImportResult:
                 person.face_message = f"下载或处理失败: {exc}"[:500]
                 result.face_failed += 1
                 print(f"[import] {progress} face fail {phone}: {exc}")
+
+        # 同步内存索引：停用剔除；启用则重新载入已启用样本
+        gallery_index.set_person_active(person.id, person.status == "active", db)
 
         db.commit()
 

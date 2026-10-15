@@ -44,7 +44,7 @@ class Person(Base):
     enroll_year: Mapped[str] = mapped_column(String(32), default="", nullable=False)
     # 票种
     ticket_type: Mapped[str] = mapped_column(String(128), default="", nullable=False)
-    # 报名状态（导入表「服务状态」）
+    # 报名状态（导入表「报名状态」；已退款时导入会停用识别）
     signup_status: Mapped[str] = mapped_column(String(64), default="", nullable=False)
     # 身份识别照片原始 URL
     photo_url: Mapped[str] = mapped_column(String(1024), default="", nullable=False)

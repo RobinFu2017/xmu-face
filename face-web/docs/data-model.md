@@ -14,7 +14,7 @@
 | education | 学历 |
 | enroll_year | 入学年份 |
 | ticket_type | 票种 |
-| signup_status | 报名状态（导入表「服务状态」） |
+| signup_status | 报名状态（导入表「报名状态」；值为「已退款」时导入会设为停用） |
 | photo_url | 身份识别照片原始 URL |
 | face_status | `ok` / `missing` / `failed` / `none` |
 | face_message | 人脸失败原因摘要 |
