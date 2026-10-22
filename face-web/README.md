@@ -2,20 +2,21 @@
 
 FastAPI + 原生 HTML/JS。管理后台录人脸，平板浏览器拍照，服务端 InsightFace `buffalo_l` 做 1:N 比对。目标库容约 1000–5000 人。
 
-**管理端需要登录**，密码为环境变量 `FACE_WEB_ADMIN_PWD`。未设置时无法登录。平板识别页 `/recognize`、正式展示页 `/recognize/stage`、识别接口，以及摄像头指引 `/guide/camera` 不需要登录。
+**需要登录**。管理员密码为 `FACE_WEB_ADMIN_PWD`，普通用户密码为 `FACE_WEB_USER_PWD`；未设置对应变量时该角色无法登录。管理员可访问全部页面与接口；普通用户只能使用识别页 `/recognize`、正式展示页 `/recognize/stage`、识别接口，以及摄像头指引 `/guide/camera`。
 
 预训练模型 `buffalo_l` 仅限非商业研究用途，详见 InsightFace 模型许可。
 
 ## 快速启动
 
-启动前设置管理密码。Windows：
+启动前设置密码。Windows：
 
 ```text
 cd face-web
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-$env:FACE_WEB_ADMIN_PWD = "你的密码"
+$env:FACE_WEB_ADMIN_PWD = "管理员密码"
+$env:FACE_WEB_USER_PWD = "普通用户密码"
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -26,7 +27,8 @@ cd face-web
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-export FACE_WEB_ADMIN_PWD=你的密码
+export FACE_WEB_ADMIN_PWD=管理员密码
+export FACE_WEB_USER_PWD=普通用户密码
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 

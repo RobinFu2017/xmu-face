@@ -2,12 +2,26 @@
 {% block content %}
 <section class="hero-block">
   <h1>人脸识别系统</h1>
-  <p>管理页面需要登录。平板识别请直接打开识别页。</p>
+  {% if role == "admin" %}
+  <p>管理员可管理人员与日志；识别页供平板使用。</p>
   <div class="actions">
     <a class="btn" href="/admin">管理后台</a>
     <a class="btn secondary" href="/recognize">平板识别</a>
     <a class="btn secondary" href="/recognize/stage">正式展示</a>
     <a class="btn secondary" href="/guide/camera">摄像头指引</a>
   </div>
+  {% elif role == "user" %}
+  <p>请使用识别页进行人脸比对。</p>
+  <div class="actions">
+    <a class="btn" href="/recognize">平板识别</a>
+    <a class="btn secondary" href="/recognize/stage">正式展示</a>
+    <a class="btn secondary" href="/guide/camera">摄像头指引</a>
+  </div>
+  {% else %}
+  <p>请先登录。管理员可管理后台；普通用户仅可使用识别页。</p>
+  <div class="actions">
+    <a class="btn" href="/login">登录</a>
+  </div>
+  {% endif %}
 </section>
 {% endblock %}

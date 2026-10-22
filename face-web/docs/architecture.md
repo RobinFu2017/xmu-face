@@ -2,10 +2,10 @@
 
 ## 组件
 
-- **浏览器管理页**（`/admin*`）：录入人员与人脸、停用/删除、查日志。
-- **平板识别页**（`/recognize`）：摄像头抓拍，POST 图片到服务端。
-- **正式展示页**（`/recognize/stage`）：全屏切图界面，URL 控制间隔与前后摄。
-- **FastAPI**：业务 API + 页面渲染；无鉴权。
+- **浏览器管理页**（`/admin*`）：录入人员与人脸、停用/删除、查日志（需管理员登录）。
+- **平板识别页**（`/recognize`）：摄像头抓拍，POST 图片到服务端（需登录；管理员或普通用户）。
+- **正式展示页**（`/recognize/stage`）：全屏切图界面，URL 控制间隔与前后摄（需登录）。
+- **FastAPI**：业务 API + 页面渲染；HMAC Cookie 鉴权，角色为 `admin` / `user`（密码来自环境变量）。
 - **InsightFace buffalo_l**：检测 + ArcFace 512 维特征（ONNX Runtime CPU）。
 - **内存索引**（`gallery_index`）：`N×512` 矩阵，精确点积 1:N。
 - **SQLite**：人员、样本、日志的权威存储；原图在 `data/uploads/`。

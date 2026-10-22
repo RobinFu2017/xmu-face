@@ -1,4 +1,4 @@
-"""识别 API：接收平板上传的 JPEG，做 1:N 比对并写日志。无鉴权。"""
+"""识别 API：接收平板上传的 JPEG，做 1:N 比对并写日志。需登录（admin 或 user）。"""
 
 from __future__ import annotations
 

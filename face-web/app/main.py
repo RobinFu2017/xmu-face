@@ -47,7 +47,7 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 # 原图通过 /media 访问（对应 data/uploads）
 app.mount("/media", StaticFiles(directory=str(UPLOAD_DIR)), name="media")
 
-# 包住页面、API 与 /media；识别页与 POST /api/recognize 在中间件内放行
+# 包住页面、API 与 /media；按 Cookie 角色鉴权（admin 全量，user 仅识别相关）
 app.middleware("http")(auth_middleware)
 
 

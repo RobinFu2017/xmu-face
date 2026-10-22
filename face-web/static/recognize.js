@@ -179,6 +179,10 @@
       fd.append("image", blob, "capture.jpg");
       fd.append("device_label", labelEl.value.trim());
       const res = await fetch("/api/recognize", { method: "POST", body: fd });
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
       const data = await res.json();
       renderResult(data);
     } catch (err) {

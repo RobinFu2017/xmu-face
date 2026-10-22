@@ -1,4 +1,4 @@
-"""管理端登录：HMAC 签名 Cookie。识别页与识别接口不校验。"""
+"""登录鉴权：HMAC 签名 Cookie，区分 admin / user 角色。"""
 
 from __future__ import annotations
 
@@ -15,6 +15,8 @@ from app.config import DATA_DIR
 
 COOKIE_NAME = "face_admin"
 COOKIE_MAX_AGE = 7 * 24 * 3600
+ROLE_ADMIN = "admin"
+ROLE_USER = "user"
 _SECRET_FILE = DATA_DIR / "session_secret"
 
 
@@ -33,44 +35,62 @@ def session_secret() -> bytes:
     return token.encode()
 
 
-def make_login_token() -> str:
+def make_login_token(role: str) -> str:
+    if role not in (ROLE_ADMIN, ROLE_USER):
+        raise ValueError(f"invalid role: {role}")
     exp = int(time.time()) + COOKIE_MAX_AGE
-    payload = f"1.{exp}"
+    payload = f"2.{role}.{exp}"
     sig = hmac.new(session_secret(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}.{sig}"
 
 
-def token_ok(value: str | None) -> bool:
+def parse_token_role(value: str | None) -> str | None:
+    """校验 Cookie，返回角色；无效或过期返回 None。旧版无角色 Cookie 一律失效。"""
     if not value:
-        return False
+        return None
     parts = value.split(".")
-    if len(parts) != 3:
-        return False
-    version, exp_s, sig = parts
-    if version != "1":
-        return False
+    if len(parts) != 4:
+        return None
+    version, role, exp_s, sig = parts
+    if version != "2" or role not in (ROLE_ADMIN, ROLE_USER):
+        return None
     try:
         exp = int(exp_s)
     except ValueError:
-        return False
+        return None
     if exp < int(time.time()):
-        return False
-    payload = f"1.{exp_s}"
+        return None
+    payload = f"2.{role}.{exp_s}"
     expected = hmac.new(session_secret(), payload.encode(), hashlib.sha256).hexdigest()
-    return hmac.compare_digest(sig, expected)
+    if not hmac.compare_digest(sig, expected):
+        return None
+    return role
 
 
-def check_admin_password(password: str) -> tuple[bool, str]:
-    expected = os.environ.get("FACE_WEB_ADMIN_PWD", "")
-    if not expected:
-        return False, "服务器未设置 FACE_WEB_ADMIN_PWD，无法登录"
-    if secrets.compare_digest(password, expected):
-        return True, ""
-    return False, "密码错误"
+def check_login_password(password: str) -> tuple[str | None, str]:
+    """校验密码，返回 (role, error)。先比管理员，再比普通用户；两者相同则视为管理员。"""
+    admin_pwd = os.environ.get("FACE_WEB_ADMIN_PWD", "")
+    user_pwd = os.environ.get("FACE_WEB_USER_PWD", "")
+    if not admin_pwd and not user_pwd:
+        return None, "服务器未设置 FACE_WEB_ADMIN_PWD / FACE_WEB_USER_PWD，无法登录"
+    if admin_pwd and secrets.compare_digest(password, admin_pwd):
+        return ROLE_ADMIN, ""
+    if user_pwd and secrets.compare_digest(password, user_pwd):
+        return ROLE_USER, ""
+    return None, "密码错误"
 
 
 def is_public(path: str, method: str) -> bool:
     if path == "/login":
+        return True
+    if path == "/static" or path.startswith("/static/"):
+        return True
+    return False
+
+
+def is_user_allowed(path: str, method: str) -> bool:
+    """普通用户可访问的路径（已登录）。"""
+    if path == "/":
         return True
     if path == "/recognize" or path.startswith("/recognize/"):
         return True
@@ -78,15 +98,15 @@ def is_public(path: str, method: str) -> bool:
         return True
     if path == "/api/recognize" and method.upper() == "POST":
         return True
-    if path == "/static" or path.startswith("/static/"):
+    if path == "/logout" and method.upper() == "POST":
         return True
     return False
 
 
-def set_login_cookie(response: RedirectResponse) -> None:
+def set_login_cookie(response: RedirectResponse, role: str) -> None:
     response.set_cookie(
         COOKIE_NAME,
-        make_login_token(),
+        make_login_token(role),
         max_age=COOKIE_MAX_AGE,
         httponly=True,
         secure=False,
@@ -100,9 +120,27 @@ def clear_login_cookie(response: RedirectResponse) -> None:
 
 
 async def auth_middleware(request: Request, call_next):
-    if is_public(request.url.path, request.method) or token_ok(request.cookies.get(COOKIE_NAME)):
-        return await call_next(request)
     path = request.url.path
+    method = request.method
+
+    if is_public(path, method):
+        return await call_next(request)
+
+    role = parse_token_role(request.cookies.get(COOKIE_NAME))
+    if role is None:
+        if path.startswith("/api") or path.startswith("/media"):
+            return JSONResponse({"detail": "未登录"}, status_code=401)
+        return RedirectResponse(url="/login", status_code=302)
+
+    request.state.role = role
+
+    if role == ROLE_ADMIN:
+        return await call_next(request)
+
+    # 普通用户：仅识别相关路径
+    if is_user_allowed(path, method):
+        return await call_next(request)
+
     if path.startswith("/api") or path.startswith("/media"):
-        return JSONResponse({"detail": "未登录"}, status_code=401)
-    return RedirectResponse(url="/login", status_code=302)
+        return JSONResponse({"detail": "无权限"}, status_code=403)
+    return RedirectResponse(url="/recognize", status_code=302)

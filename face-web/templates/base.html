@@ -10,13 +10,19 @@
   <header class="topbar">
     <a class="brand" href="/">face-web</a>
     <nav>
+      {% if role == "admin" %}
       <a href="/admin">人员</a>
       <a href="/admin/logs">日志</a>
+      {% endif %}
+      {% if role %}
       <a href="/recognize">识别</a>
       <a href="/guide/camera">摄像头指引</a>
       <form method="post" action="/logout" class="logout-form">
         <button type="submit" class="linkish">退出</button>
       </form>
+      {% else %}
+      <a href="/login">登录</a>
+      {% endif %}
     </nav>
   </header>
   <main class="container">
