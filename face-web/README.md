@@ -2,7 +2,7 @@
 
 FastAPI + 原生 HTML/JS。管理后台录人脸，平板浏览器拍照，服务端 InsightFace `buffalo_l` 做 1:N 比对。目标库容约 1000–5000 人。
 
-**需要登录**。管理员密码为 `FACE_WEB_ADMIN_PWD`，普通用户密码为 `FACE_WEB_USER_PWD`；未设置对应变量时该角色无法登录。管理员可访问全部页面与接口；普通用户只能使用识别页 `/recognize`、正式展示页 `/recognize/stage`、识别接口，以及摄像头指引 `/guide/camera`。
+**需要登录**。管理员密码为 `FACE_WEB_ADMIN_PWD`，普通用户密码为 `FACE_WEB_USER_PWD`；未设置对应变量时该角色无法登录。管理员可访问全部页面与接口；普通用户只能使用识别页 `/recognize`、正式展示页 `/recognize/stage`、识别接口，以及摄像头指引 `/guide/camera`。密码错误后全局冷却 5 秒。
 
 预训练模型 `buffalo_l` 仅限非商业研究用途，详见 InsightFace 模型许可。
 

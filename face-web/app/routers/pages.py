@@ -6,7 +6,14 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app.auth import ROLE_ADMIN, check_login_password, clear_login_cookie, set_login_cookie
+from app.auth import (
+    ROLE_ADMIN,
+    check_login_password,
+    clear_login_cookie,
+    login_cooldown_remaining,
+    login_trigger_cooldown,
+    set_login_cookie,
+)
 from app.config import ROOT_DIR
 
 router = APIRouter(tags=["pages"])
@@ -30,8 +37,17 @@ def login_page(request: Request) -> HTMLResponse:
 
 @router.post("/login", response_model=None)
 def login_submit(request: Request, password: str = Form("")):
+    if login_cooldown_remaining() is not None:
+        return templates.TemplateResponse(
+            request,
+            "login.html",
+            _ctx(request, title="登录", error="请稍后再试"),
+            status_code=429,
+        )
+
     role, message = check_login_password(password)
     if role is None:
+        login_trigger_cooldown()
         return templates.TemplateResponse(
             request,
             "login.html",

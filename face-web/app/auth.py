@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import os
 import secrets
+import threading
 import time
 
 from fastapi import Request
@@ -17,7 +18,11 @@ COOKIE_NAME = "face_admin"
 COOKIE_MAX_AGE = 7 * 24 * 3600
 ROLE_ADMIN = "admin"
 ROLE_USER = "user"
+LOGIN_COOLDOWN_SECONDS = 5
 _SECRET_FILE = DATA_DIR / "session_secret"
+
+_login_lock_until = 0.0
+_login_cooldown_lock = threading.Lock()
 
 
 def session_secret() -> bytes:
@@ -78,6 +83,22 @@ def check_login_password(password: str) -> tuple[str | None, str]:
     if user_pwd and secrets.compare_digest(password, user_pwd):
         return ROLE_USER, ""
     return None, "密码错误"
+
+
+def login_cooldown_remaining() -> int | None:
+    """全局冷却未结束时返回剩余秒数，否则 None。"""
+    with _login_cooldown_lock:
+        remaining = _login_lock_until - time.time()
+    if remaining > 0:
+        return max(1, int(remaining))
+    return None
+
+
+def login_trigger_cooldown() -> None:
+    """密码错误后触发全局冷却。"""
+    global _login_lock_until
+    with _login_cooldown_lock:
+        _login_lock_until = time.time() + LOGIN_COOLDOWN_SECONDS
 
 
 def is_public(path: str, method: str) -> bool:
